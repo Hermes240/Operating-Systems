@@ -1,0 +1,14 @@
+******************************************
+*(6)-->(5) -->(1)-->(2)-->(3)-->(4)-->(5)*
+******************************************
+
+(6) The CPU starts by executing the main function. Within the main function it calls kgetc()
+(5) CPU executes kgetc() and waits for the user to press a key. 
+	CPU will loop if user does not tap any key. If the user taps a key, an IRQ_Interrupt is generated
+(1) loads the address of irq_handler() into the PC.
+(2) Then it subtracts  a constant integer 4 from the link register. Then, it pushes the content of registers
+	r0-r2 into IRQ stack. Calls back irq_handler
+(3) irq_handler will read the interrupt status.
+(4) The kbd_handler reads the scan code from the KBD data register, and maps the scan code to its ascii
+and assign it to c
+(5)  This time, the program does not go into the while loop. It returns the data

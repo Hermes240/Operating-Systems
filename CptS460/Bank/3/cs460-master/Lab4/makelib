@@ -1,0 +1,7 @@
+rm mylib
+bcc -c -ansi int.c
+bcc -c -ansi kernel.c
+bcc -c -ansi wait.c
+bcc -c -ansi queue.c
+ar r mylib int.o kernel.o wait.o queue.o
+ar t mylib

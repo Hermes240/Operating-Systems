@@ -1,0 +1,270 @@
+// kernel.c file
+
+#define NPROC 12
+PROC proc[NPROC], *running, *freeList, *readyQueue, * ChildList, *TQE;
+PROC *sleepList;
+int procsize = sizeof(PROC);
+int body();
+int value;
+
+int init()
+{
+  int i, j; 
+  PROC *p;
+  kprintf("kernel_init()\n");
+  for (i=0; i<NPROC; i++){
+    p = &proc[i];
+    p->pid = i;
+    p->status = READY;
+    p->next = p + 1;
+  }
+  proc[NPROC-1].next = 0; // circular proc list
+
+  freeList = &proc[0];
+  readyQueue = 0;
+  sleepList = 0;
+  ChildList = 0;
+  
+  p = dequeue(&freeList);
+  p->priority = 0;
+  p->ppid = 0;
+  running = p;
+
+  kprintf("running = %d\n", running->pid);
+  //printList("freeList", freeList);
+
+  p->parent = 0;
+  p->sibling = 0;
+  p->child = 0;
+  p->child->pid = 0;
+  p->sibling->pid = 0;
+  p->relative_time = 0;
+}
+
+  
+PROC* kfork(int func, int priority)
+{
+  int i;
+  PROC *p = dequeue(&freeList);
+  PROC *t = dequeue(&freeList);
+  if (p==0){
+    printf("no more PROC, kfork failed\n");
+    return 0;
+  }
+  
+  p->ppid = running->pid;
+  p->parent = running;
+  p->sibling = running->child;
+  p->child = 0;
+  p->status = READY;
+  p->priority = priority;
+  p->relative_time = value;
+
+  
+  
+  // set kstack for new proc to resume to func()
+  // stack = r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r14
+  //         1  2  3  4  5  6  7  8  9  10 11  12  13  14
+  for (i=1; i<15; i++)
+      p->kstack[SSIZE-i] = 0;
+  p->kstack[SSIZE-1] = (int)func;  // in dec reg=address ORDER !!!
+  p->ksp = &(p->kstack[SSIZE-14]);
+  enqueue(&readyQueue, p);
+
+  printf("\nproc %d kforked a child %d\n", running->pid, p->pid);
+ 
+  return p;
+}
+
+int scheduler()
+{
+  if (running->status == READY)
+     enqueue(&readyQueue, running);
+  running = dequeue(&readyQueue);
+  
+  if (running->pid){
+    color = running->pid;
+  }
+}
+
+int wakeup()
+{
+  printf("enter an event to wakeup with: ");
+  int event = geti();
+  kwakeup(event);
+}
+
+int sleep()
+{
+   printf("enter an event to wakeup with: ");
+  int event = geti();
+  ksleep(event);
+}
+
+int fork()
+{
+  //PROC *q = kfork((int)body, 1);
+  //enqueue(&readyQueue, q);
+  //insert_child(running,q);
+  return 0;
+  
+}
+
+int wait()
+{
+  int status, pid;
+
+  pid = kwait(&status);
+}
+
+int body()
+{
+  char c, cmd[64];
+  printf("\n");
+  kprintf("proc %d resume to body()\n", running->pid);
+  while(1){
+    printf("-------- proc %d running -----------\n", running->pid); 
+    
+    printList("freeList  ", freeList);
+    
+    printf("\n");
+    //timer_printList("TQE", sleepList);
+	
+    printf("Enter a command [switch|kfork|exit|sleep|wakup|wait] : ",running->pid);
+    kgets(cmd);
+    printf("\n");
+
+    if (strcmp(cmd, "switch")==0)
+    {
+      tswitch();
+      
+    } 
+    else if (strcmp(cmd, "kfork")==0)
+    {
+      fork();
+    }
+    else if (strcmp(cmd, "exit")==0)
+    {
+      kexit(running->pid);
+    }
+    else if (strcmp(cmd, "sleep")==0)
+    {
+      sleep();  
+    }
+    else if (strcmp(cmd, "wakeup")==0)
+    {
+      wakeup();   
+    }
+
+    else if (strcmp(cmd, "wait")==0)
+    {
+      wait();   
+    }
+
+    else if (strcmp(cmd, "t")==0)
+    {
+      time();   
+    }
+
+  }
+}
+
+int printChildList(PROC *q)
+{
+  printf("ChildList=");
+  
+  while(q){
+    if(q->status == 0)
+    {
+      printf("[%d FREE]->", q->pid);
+    }
+
+    else if(q->status == 1)
+    {
+      printf("[%d READY]->", q->pid);
+    }
+
+    else if(q->status == 2)
+    {
+      printf("[%d SLEEP]->", q->pid);
+    }
+
+    else if(q->status == 3)
+    {
+      printf("[%d BLOCK]->", q->pid);
+    }
+
+    else if(q->status == 4)
+    {
+      printf("[%d ZOMBIE]->", q->pid);
+    }
+    
+    q = q->sibling;
+  }
+  printf("NULL\n");
+}
+
+
+int insert_child( PROC *parent, PROC *q)
+{
+  PROC *p;
+
+  p = parent->child;
+  if (parent->child==0)
+  {
+    q->sibling = 0;
+    parent->child = q;
+    
+    
+  }
+    
+  else{
+    while(p->sibling)
+    {
+      p = p->sibling;
+    }
+    p->sibling = q;
+  }
+
+  q->parent = parent;
+  q->sibling = 0;
+}
+
+
+int time()
+{
+  printf("enter timer value: ");
+  value = geti();
+  insert_time();
+
+}
+
+
+int insert_time()
+{
+  //PROC *p = kfork((int)body, 1);
+  //timer_enqueue(TQE,running);
+  running->relative_time = value;
+  PROC *p = sleepList;
+  printsleepList(p);
+  //PROC *p = running;
+
+  while(p)
+  {
+    if(p->relative_time -value >=0)
+    {
+      p->relative_time = p->relative_time-value;
+    }
+
+    else
+    {
+      p->relative_time = value - p->relative_time;
+    }
+    
+
+    p = p->next;
+  }
+
+  ksleep(running->pid);
+}
+

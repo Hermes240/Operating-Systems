@@ -1,0 +1,33 @@
+1. On Intel x86 based PCs,druing booting, what does BIOS do?
+
+    BIOS initializes itself, then it checks memory and other devices.
+    Some information needed by BIOS are kept in a small cmos RAM, powered 
+    by a battery.Then, BIOS looks for a system to boot. The usual booting sequence is 
+    A drive (floppy disk), C drive (Hard disk), CDROM, etc.
+    which can be changed by programming the BIOS (cmos RAM). 
+    First, BIOS tries to boot from drive A: If there is no diskette is A:,
+    it will try to boot from C
+
+    How many sectors does BIOS load from the boot device? One sector (SO)
+
+    Where in memory does BIOS load the booter? BIOS loads the MBR to (0x0000, 0x7C00)
+
+
+2. BIOS loads only 512 bytes of a booter into memory, which is only the 
+   beginning part of the booter. How does the booter load the remaining part of 
+   the booter into memory?
+
+   During booting, BIOS loads the MBR to (0x0000, 0x7C00) and execute the loaded code in MBR.
+   The code in MBR is usually a stage1 booter, which loads and excutes a stage2 booter
+
+4. How do you find the file /boot/mtx?
+	First, read in the 0th group descriptor to find the start block of the inodes
+	table. Then read in the root inode, which is number 2 inode in the inode table.
+	From the root inode’s data blocks, search for the first component of the file name,
+	boot
+
+5. How to load the (disk) blocks of /boot/mtx to the segment 0x1000?
+	Set ES to loading segment using. Then load direct blocks and indirect blocks if any
+
+
+   

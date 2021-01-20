@@ -1,0 +1,33 @@
+mount -o loop sdimage /mnt
+
+./mku init
+./mku login
+./mku sh
+./mku ls
+./mku cat
+./mku more
+./mku grep
+./mku l2u
+./mku mkdir
+./mku rmdir
+./mku unlink
+./mku man
+
+umount /mnt
+
+rm *.o
+
+echo ready to go?
+read dummy
+
+qemu-system-arm -M versatilepb -m 256M -sd sdimage -kernel wanix -serial mon:stdio -serial /dev/pts/1
+
+
+
+
+
+ 
+
+
+
+
